@@ -9,19 +9,28 @@
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   z-index: 999999;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
+  overflow: visible;
 }
 
 #claude-control-panel.collapsed {
-  transform: translateX(calc(100% - 30px));
+  transform: translateX(100%);
+  width: 0;
+  height: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  overflow: visible;
+  border-radius: 0;
 }
 
 .claude-toggle-btn {
   position: absolute;
-  left: -30px;
+  right: -30px;
   top: 50%;
   transform: translateY(-50%);
   width: 60px;
@@ -33,36 +42,57 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  z-index: 1000000;
+  z-index: 1000001;
+  overflow: hidden;
 }
 
 .claude-toggle-btn:hover {
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
 }
 
 #claude-control-panel.collapsed .claude-toggle-btn {
-  transform: translateY(-50%);
+  right: 20px;
+  bottom: 20px;
+  top: auto;
+  transform: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px 0 0 30px;
+  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.2);
+  border-right: none;
+  overflow: hidden;
+  position: fixed;
 }
 
 #claude-control-panel.collapsed .claude-toggle-btn:hover {
-  transform: translateY(-50%) scale(1.1);
+  transform: scale(1.02);
+  box-shadow: -10px 0 25px rgba(0, 0, 0, 0.3);
 }
 
 .claude-toggle-btn svg {
   color: white;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 18px;
 }
 
 #claude-control-panel.collapsed .claude-toggle-btn svg {
-  transform: rotate(180deg);
+  transform: rotate(180deg) translateX(-5px);
 }
 
 .claude-panel-content {
   padding: 24px;
   color: white;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#claude-control-panel.collapsed .claude-panel-content {
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+  display: none;
 }
 
 .claude-panel-header {

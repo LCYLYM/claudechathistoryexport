@@ -10,7 +10,7 @@
 
 *一个功能强大、界面精美的浏览器扩展，专为Claude用户打造*
 
-[📥 安装扩展](#-安装指南) • [🎯 功能特性](#-核心功能) • [📖 使用教程](#-使用教程) • [🎨 界面预览](#-界面预览)
+[📥 安装扩展](#-安装指南) • [🎯 功能特性](#-核心功能) • [📖 使用教程](#-使用教程) • [🎨 界面预览](#-界面预览) • [🔗 GitHub仓库](https://github.com/LCYLYM/claudechathistoryexport)
 
 ---
 
@@ -26,20 +26,16 @@
 
 ## 🎯 核心功能
 
-### 🎪 **一键导出多分支对话**
-```
+### 🎪 **一键导出多分支对话**```
 🌳 完整保留对话的分支结构
 📊 支持所有消息类型（文本、图片、工具调用）
-💾 自动保存到本地 + 下载JSON文件
-```
+💾 自动保存到本地 + 下载JSON文件```
 
-### 🎨 **可视化对话查看器**
-```
+### 🎨 **可视化对话查看器**```
 🖼️ 美观的树形结构展示
 🔍 支持搜索和过滤功能
 📱 响应式设计，完美适配各种屏幕
-🎭 支持Markdown渲染和代码高亮
-```
+🎭 支持Markdown渲染和代码高亮```
 
 ### 💾 **智能存储管理**
 ```
@@ -121,8 +117,8 @@
 
 1. **下载扩展文件**
    ```bash
-   git clone https://github.com/your-repo/claude-conversation-manager
-   cd claude-conversation-manager
+   git clone https://github.com/LCYLYM/claudechathistoryexport
+   cd claudechathistoryexport
    ```
 
 2. **打开Chrome扩展管理**
@@ -237,10 +233,10 @@
 我们欢迎所有形式的贡献！
 
 ### 🐛 **报告问题**
-在 [Issues](https://github.com/your-repo/issues) 页面报告bug或提出建议
+在 [Issues](https://github.com/LCYLYM/claudechathistoryexport/issues) 页面报告bug或提出建议
 
 ### 💡 **功能建议**
-有好的想法？在 [Discussions](https://github.com/your-repo/discussions) 分享你的创意
+有好的想法？在 [Discussions](https://github.com/LCYLYM/claudechathistoryexport/discussions) 分享你的创意
 
 ### 🔧 **代码贡献**
 1. Fork 项目
@@ -266,8 +262,11 @@
 
 *让每一次对话都值得珍藏*
 
-[![Star](https://img.shields.io/github/stars/your-repo/claude-conversation-manager?style=social)](https://github.com/your-repo/claude-conversation-manager)
-[![Fork](https://img.shields.io/github/forks/your-repo/claude-conversation-manager?style=social)](https://github.com/your-repo/claude-conversation-manager)
-[![Watch](https://img.shields.io/github/watchers/your-repo/claude-conversation-manager?style=social)](https://github.com/your-repo/claude-conversation-manager)
+[![Star](https://img.shields.io/github/stars/LCYLYM/claudechathistoryexport?style=social)](https://github.com/LCYLYM/claudechathistoryexport)
+[![Fork](https://img.shields.io/github/forks/LCYLYM/claudechathistoryexport?style=social)](https://github.com/LCYLYM/claudechathistoryexport)
+[![Watch](https://img.shields.io/github/watchers/LCYLYM/claudechathistoryexport?style=social)](https://github.com/LCYLYM/claudechathistoryexport)
 
 </div>
+
+
+

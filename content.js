@@ -448,6 +448,22 @@ ${!userId ? '\n⚠️ 用户ID获取失败，请尝试:\n1. 刷新页面\n2. 发
         easterEgg.innerHTML = `
             <div style="font-size: 48px; margin-bottom: 16px;">🐟✨</div>
             <div style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">${randomMessage}</div>
+            <div style="margin-bottom: 20px;">
+                <a href="https://github.com/LCYLYM/claudechathistoryexport" target="_blank" class="github-link" style="
+                    color: rgba(255, 255, 255, 0.9);
+                    text-decoration: none;
+                    font-size: 14px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 6px;
+                    transition: all 0.3s ease;
+                ">
+                    🔗 GitHub项目地址
+                </a>
+            </div>
             <button class="easter-egg-close-btn" style="
                 background: rgba(255, 255, 255, 0.2);
                 border: 1px solid rgba(255, 255, 255, 0.3);
@@ -464,9 +480,14 @@ ${!userId ? '\n⚠️ 用户ID获取失败，请尝试:\n1. 刷新页面\n2. 发
 
         // 添加事件监听器
         const closeBtn = easterEgg.querySelector('.easter-egg-close-btn');
+        const githubLink = easterEgg.querySelector('.github-link');
+
         closeBtn.addEventListener('click', () => easterEgg.remove());
         closeBtn.addEventListener('mouseover', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.3)');
         closeBtn.addEventListener('mouseout', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)');
+
+        githubLink.addEventListener('mouseover', () => githubLink.style.background = 'rgba(255, 255, 255, 0.1)');
+        githubLink.addEventListener('mouseout', () => githubLink.style.background = 'transparent');
 
         // 添加动画样式
         const style = document.createElement('style');

@@ -1491,6 +1491,11 @@ class ConversationViewer {
             <div class="footer-logo">🐟✨</div>
             <p><strong>Made with ❤️ by Claude对话管理中心</strong></p>
             <p style="color: #64748b; margin-top: 10px;">让每一次对话都值得珍藏</p>
+            <p style="color: #64748b; margin-top: 15px; font-size: 0.9em;">
+                <a href="https://github.com/LCYLYM/claudechathistoryexport" target="_blank" style="color: #667eea; text-decoration: none;">
+                    🔗 GitHub项目地址
+                </a>
+            </p>
         </footer>
     </div>
 </body>

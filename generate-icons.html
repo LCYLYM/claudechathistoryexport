@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图标生成器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .icon-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .icon-sizes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .icon-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed #e2e8f0;
+        }
+        
+        .icon-item canvas {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s ease;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .instructions {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #0ea5e9;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐟 Claude对话管理中心 - 图标生成器</h1>
+        
+        <div class="icon-preview">
+            <div id="svg-container"></div>
+        </div>
+        
+        <div class="icon-sizes" id="icon-sizes">
+            <!-- 图标将在这里生成 -->
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li>上方显示的是SVG原始图标</li>
+                <li>下方是不同尺寸的PNG图标预览</li>
+                <li>点击"下载"按钮可以下载对应尺寸的PNG文件</li>
+                <li>将下载的图标文件放入扩展目录中</li>
+                <li>更新manifest.json中的图标路径</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // SVG内容
+        const svgContent = `<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 渐变定义 -->
+    <linearGradient id="fishBodyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#667eea;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="fishBellyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a8edea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fed6e3;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="tailGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff9a9e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fecfef;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="finGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffecd2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fcb69f;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 阴影滤镜 -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+    
+    <!-- 发光效果 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="64" cy="64" r="60" fill="url(#fishBodyGradient)" filter="url(#dropShadow)" opacity="0.1"/>
+  
+  <!-- 鱼身主体 -->
+  <ellipse cx="64" cy="64" rx="35" ry="20" fill="url(#fishBodyGradient)" filter="url(#glow)"/>
+  
+  <!-- 鱼肚子 -->
+  <ellipse cx="68" cy="70" rx="25" ry="12" fill="url(#fishBellyGradient)" opacity="0.8"/>
+  
+  <!-- 鱼尾巴 -->
+  <path d="M 29 64 Q 15 50 8 55 Q 12 64 8 73 Q 15 78 29 64 Z" fill="url(#tailGradient)" filter="url(#glow)"/>
+  
+  <!-- 背鳍 -->
+  <path d="M 45 44 Q 55 35 65 40 Q 75 45 85 42 Q 80 50 70 52 Q 60 54 50 52 Q 45 50 45 44 Z" fill="url(#finGradient)" opacity="0.9"/>
+  
+  <!-- 腹鳍 -->
+  <path d="M 50 82 Q 60 88 70 85 Q 75 82 80 84 Q 75 90 65 88 Q 55 86 50 82 Z" fill="url(#finGradient)" opacity="0.9"/>
+  
+  <!-- 胸鳍 -->
+  <ellipse cx="85" cy="58" rx="8" ry="15" fill="url(#finGradient)" opacity="0.8" transform="rotate(25 85 58)"/>
+  <ellipse cx="85" cy="70" rx="8" ry="15" fill="url(#finGradient)" opacity="0.8" transform="rotate(-25 85 70)"/>
+  
+  <!-- 鱼眼睛 -->
+  <circle cx="85" cy="58" r="8" fill="white" filter="url(#dropShadow)"/>
+  <circle cx="85" cy="58" r="6" fill="#2d3748"/>
+  <circle cx="87" cy="56" r="2" fill="white"/>
+  <circle cx="88" cy="55" r="1" fill="white" opacity="0.8"/>
+  
+  <!-- 鱼鳞纹理 -->
+  <g opacity="0.3">
+    <circle cx="55" cy="58" r="3" fill="none" stroke="white" stroke-width="0.5"/>
+    <circle cx="65" cy="62" r="3" fill="none" stroke="white" stroke-width="0.5"/>
+    <circle cx="75" cy="66" r="3" fill="none" stroke="white" stroke-width="0.5"/>
+    <circle cx="60" cy="70" r="3" fill="none" stroke="white" stroke-width="0.5"/>
+    <circle cx="70" cy="74" r="3" fill="none" stroke="white" stroke-width="0.5"/>
+  </g>
+  
+  <!-- 嘴巴 -->
+  <ellipse cx="98" cy="64" rx="4" ry="2" fill="#ff6b6b" opacity="0.8"/>
+  
+  <!-- 气泡装饰 -->
+  <g opacity="0.6">
+    <circle cx="105" cy="45" r="2" fill="#a8edea"/>
+    <circle cx="110" cy="38" r="1.5" fill="#fed6e3"/>
+    <circle cx="115" cy="42" r="1" fill="#ffecd2"/>
+    <circle cx="108" cy="50" r="1" fill="#a8edea"/>
+  </g>
+  
+  <!-- 水波纹效果 -->
+  <g opacity="0.4">
+    <path d="M 20 90 Q 30 85 40 90 Q 50 95 60 90 Q 70 85 80 90 Q 90 95 100 90 Q 110 85 120 90" 
+          fill="none" stroke="#a8edea" stroke-width="1.5"/>
+    <path d="M 15 100 Q 25 95 35 100 Q 45 105 55 100 Q 65 95 75 100 Q 85 105 95 100 Q 105 95 115 100" 
+          fill="none" stroke="#fed6e3" stroke-width="1"/>
+  </g>
+  
+  <!-- 高光效果 -->
+  <ellipse cx="75" cy="55" rx="15" ry="8" fill="url(#fishBellyGradient)" opacity="0.4" transform="rotate(-15 75 55)"/>
+</svg>`;
+
+        // 显示SVG预览
+        document.getElementById('svg-container').innerHTML = svgContent;
+
+        // 需要生成的图标尺寸
+        const sizes = [16, 32, 48, 64, 128];
+
+        // 生成不同尺寸的图标
+        function generateIcons() {
+            const container = document.getElementById('icon-sizes');
+            
+            sizes.forEach(size => {
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, size, size);
+                };
+                
+                const svgBlob = new Blob([svgContent], {type: 'image/svg+xml'});
+                const url = URL.createObjectURL(svgBlob);
+                img.src = url;
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-btn';
+                downloadBtn.textContent = '下载';
+                downloadBtn.onclick = () => downloadIcon(canvas, size);
+                
+                iconItem.innerHTML = `
+                    <h4>${size}x${size}</h4>
+                    <div style="margin: 10px 0;"></div>
+                    <div style="margin: 10px 0;"></div>
+                `;
+                iconItem.children[1].appendChild(canvas);
+                iconItem.children[2].appendChild(downloadBtn);
+                
+                container.appendChild(iconItem);
+            });
+        }
+
+        // 下载图标
+        function downloadIcon(canvas, size) {
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // 页面加载完成后生成图标
+        window.addEventListener('load', generateIcons);
+    </script>
+</body>
+</html>
