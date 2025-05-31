@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>创建插件图标</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .icon-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .icon-item {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a6fd8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Claude对话管理器 - 图标生成器</h1>
+    <p>点击下载按钮保存对应尺寸的图标到插件的icons文件夹中</p>
+    
+    <div class="icon-container">
+        <div class="icon-item">
+            <h3>16x16</h3>
+            <canvas id="canvas16" width="16" height="16"></canvas>
+            <br>
+            <button onclick="downloadIcon(16)">下载 icon16.png</button>
+        </div>
+        
+        <div class="icon-item">
+            <h3>32x32</h3>
+            <canvas id="canvas32" width="32" height="32"></canvas>
+            <br>
+            <button onclick="downloadIcon(32)">下载 icon32.png</button>
+        </div>
+        
+        <div class="icon-item">
+            <h3>48x48</h3>
+            <canvas id="canvas48" width="48" height="48"></canvas>
+            <br>
+            <button onclick="downloadIcon(48)">下载 icon48.png</button>
+        </div>
+        
+        <div class="icon-item">
+            <h3>128x128</h3>
+            <canvas id="canvas128" width="128" height="128"></canvas>
+            <br>
+            <button onclick="downloadIcon(128)">下载 icon128.png</button>
+        </div>
+    </div>
+
+    <script>
+        // 绘制图标的函数
+        function drawIcon(ctx, size) {
+            // 清除画布
+            ctx.clearRect(0, 0, size, size);
+            
+            // 创建渐变背景
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            // 绘制圆形背景
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2 - 2, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 绘制数据层图标
+            const center = size / 2;
+            const scale = size / 128; // 基于128px的缩放比例
+            
+            ctx.fillStyle = '#ffd700';
+            ctx.globalAlpha = 0.9;
+            
+            // 第一层
+            ctx.beginPath();
+            ctx.moveTo(center - 24*scale, center - 20*scale);
+            ctx.lineTo(center - 8*scale, center - 25*scale);
+            ctx.lineTo(center + 8*scale, center - 25*scale);
+            ctx.lineTo(center + 24*scale, center - 20*scale);
+            ctx.lineTo(center + 8*scale, center - 15*scale);
+            ctx.lineTo(center - 8*scale, center - 15*scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.globalAlpha = 0.7;
+            // 第二层
+            ctx.beginPath();
+            ctx.moveTo(center - 24*scale, center - 5*scale);
+            ctx.lineTo(center - 8*scale, center - 10*scale);
+            ctx.lineTo(center + 8*scale, center - 10*scale);
+            ctx.lineTo(center + 24*scale, center - 5*scale);
+            ctx.lineTo(center + 8*scale, center);
+            ctx.lineTo(center - 8*scale, center);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.globalAlpha = 0.9;
+            // 第三层
+            ctx.beginPath();
+            ctx.moveTo(center - 24*scale, center + 10*scale);
+            ctx.lineTo(center - 8*scale, center + 5*scale);
+            ctx.lineTo(center + 8*scale, center + 5*scale);
+            ctx.lineTo(center + 24*scale, center + 10*scale);
+            ctx.lineTo(center + 8*scale, center + 15*scale);
+            ctx.lineTo(center - 8*scale, center + 15*scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制对话气泡
+            ctx.fillStyle = 'white';
+            ctx.globalAlpha = 0.9;
+            
+            // 主气泡
+            ctx.beginPath();
+            ctx.roundRect(center - 15*scale, center + 15*scale, 30*scale, 20*scale, 5*scale);
+            ctx.fill();
+            
+            // 气泡尾巴
+            ctx.beginPath();
+            ctx.moveTo(center - 10*scale, center + 35*scale);
+            ctx.lineTo(center - 12*scale, center + 40*scale);
+            ctx.lineTo(center - 5*scale, center + 35*scale);
+            ctx.fill();
+            
+            // 小气泡
+            ctx.beginPath();
+            ctx.arc(center + 18*scale, center + 25*scale, 3*scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(center + 22*scale, center + 20*scale, 2*scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 绘制小鱼
+            if (size >= 32) {
+                ctx.fillStyle = '#4ade80';
+                ctx.globalAlpha = 1;
+                
+                const fishX = center + 20*scale;
+                const fishY = center - 15*scale;
+                
+                // 鱼身
+                ctx.beginPath();
+                ctx.ellipse(fishX - 3*scale, fishY, 4*scale, 2*scale, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // 鱼尾
+                ctx.beginPath();
+                ctx.moveTo(fishX + 1*scale, fishY);
+                ctx.lineTo(fishX + 5*scale, fishY - 2*scale);
+                ctx.lineTo(fishX + 5*scale, fishY + 2*scale);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 鱼眼
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(fishX - 2*scale, fishY, 0.5*scale, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            ctx.globalAlpha = 1;
+        }
+        
+        // 为Canvas添加roundRect方法（如果不存在）
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+                this.moveTo(x + radius, y);
+                this.lineTo(x + width - radius, y);
+                this.quadraticCurveTo(x + width, y, x + width, y + radius);
+                this.lineTo(x + width, y + height - radius);
+                this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                this.lineTo(x + radius, y + height);
+                this.quadraticCurveTo(x, y + height, x, y + height - radius);
+                this.lineTo(x, y + radius);
+                this.quadraticCurveTo(x, y, x + radius, y);
+                this.closePath();
+            };
+        }
+        
+        // 初始化所有画布
+        function initCanvases() {
+            [16, 32, 48, 128].forEach(size => {
+                const canvas = document.getElementById(`canvas${size}`);
+                const ctx = canvas.getContext('2d');
+                drawIcon(ctx, size);
+            });
+        }
+        
+        // 下载图标
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const link = document.createElement('a');
+            link.download = `icon${size}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', initCanvases);
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffed4e;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/>
+    </filter>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="64" cy="64" r="58" fill="url(#grad1)" stroke="white" stroke-width="4" filter="url(#shadow)"/>
+  
+  <!-- 对话气泡1 -->
+  <path d="M25 35 Q20 30 20 35 L20 50 Q20 55 25 55 L45 55 L40 65 L50 55 L55 55 Q60 55 60 50 L60 35 Q60 30 55 30 L25 30 Q20 30 20 35 Z" fill="white" opacity="0.9" filter="url(#shadow)"/>
+  
+  <!-- 对话气泡2 -->
+  <path d="M70 45 Q65 40 65 45 L65 65 Q65 70 70 70 L90 70 L85 80 L95 70 L100 70 Q105 70 105 65 L105 45 Q105 40 100 40 L70 40 Q65 40 65 45 Z" fill="white" opacity="0.8" filter="url(#shadow)"/>
+  
+  <!-- 中心图标 - 检查标记 -->
+  <circle cx="64" cy="64" r="20" fill="url(#grad2)" filter="url(#shadow)"/>
+  <path d="M56 64 L62 70 L76 56" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 装饰性星星 -->
+  <path d="M30 20 L32 26 L38 26 L33 30 L35 36 L30 32 L25 36 L27 30 L22 26 L28 26 Z" fill="url(#grad2)" opacity="0.7"/>
+  <path d="M95 25 L96 28 L99 28 L97 30 L98 33 L95 31 L92 33 L93 30 L91 28 L94 28 Z" fill="url(#grad2)" opacity="0.6"/>
+  <path d="M20 85 L21 87 L23 87 L22 88 L23 90 L21 89 L19 90 L20 88 L18 87 L20 87 Z" fill="url(#grad2)" opacity="0.5"/>
+  <path d="M100 90 L101 92 L103 92 L102 93 L103 95 L101 94 L99 95 L100 93 L98 92 L100 92 Z" fill="url(#grad2)" opacity="0.4"/>
+  
+  <!-- 边框装饰 -->
+  <circle cx="64" cy="64" r="58" fill="none" stroke="url(#grad2)" stroke-width="2" opacity="0.3"/>
+  
+  <!-- 小鱼图标 -->
+  <path d="M15 100 Q12 98 15 96 L18 98 L20 96 L18 100 L15 100 Z" fill="url(#grad2)" opacity="0.6"/>
+</svg>

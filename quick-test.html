@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .result {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Claude对话查看器快速测试</h1>
+        
+        <button onclick="testJSONParsing()">测试JSON解析</button>
+        <button onclick="testMessageTree()">测试消息树构建</button>
+        <button onclick="openViewerWithData()">在查看器中打开</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testJSONParsing() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="result">正在测试JSON解析...</div>';
+            
+            try {
+                const response = await fetch('./新json适配/claude_946a2b2a_2025-05-31.json');
+                const data = await response.json();
+                
+                let output = `✅ JSON解析成功\n`;
+                output += `对话名称: ${data.name}\n`;
+                output += `消息数量: ${data.chat_messages.length}\n`;
+                output += `UUID: ${data.uuid}\n\n`;
+                
+                // 检查消息结构
+                output += `消息详情:\n`;
+                data.chat_messages.forEach((msg, i) => {
+                    output += `${i+1}. ${msg.sender} (${msg.uuid.substring(0, 8)})\n`;
+                    output += `   父消息: ${msg.parent_message_uuid}\n`;
+                    if (msg.content && msg.content.length > 0) {
+                        output += `   内容块: ${msg.content.length}个\n`;
+                        msg.content.forEach((content, j) => {
+                            output += `     ${j+1}. ${content.type}: ${content.text ? content.text.substring(0, 30) + '...' : '无文本'}\n`;
+                        });
+                    }
+                    output += '\n';
+                });
+                
+                results.innerHTML = `<div class="result success">${output}</div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="result error">❌ 错误: ${error.message}</div>`;
+            }
+        }
+        
+        async function testMessageTree() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="result">正在测试消息树构建...</div>';
+            
+            try {
+                const response = await fetch('./新json适配/claude_946a2b2a_2025-05-31.json');
+                const data = await response.json();
+                
+                // 模拟viewer.js中的buildMessageTree逻辑
+                const messageTree = new Map();
+                const rootMessages = [];
+                
+                // 首先将所有消息添加到map中
+                data.chat_messages.forEach(message => {
+                    messageTree.set(message.uuid, {
+                        ...message,
+                        children: []
+                    });
+                });
+                
+                // 然后建立父子关系
+                data.chat_messages.forEach(message => {
+                    // 检查是否有有效的父消息UUID（排除空值和特殊的根UUID）
+                    const hasValidParent = message.parent_message_uuid && 
+                                         message.parent_message_uuid !== "00000000-0000-4000-8000-000000000000";
+                    
+                    if (hasValidParent) {
+                        const parent = messageTree.get(message.parent_message_uuid);
+                        if (parent) {
+                            parent.children.push(message.uuid);
+                        } else {
+                            // 如果找不到父消息，将其作为根消息
+                            rootMessages.push(message.uuid);
+                        }
+                    } else {
+                        rootMessages.push(message.uuid);
+                    }
+                });
+                
+                let output = `✅ 消息树构建成功\n`;
+                output += `根消息数量: ${rootMessages.length}\n\n`;
+                
+                output += `消息树结构:\n`;
+                function printTree(messageId, depth = 0) {
+                    const message = messageTree.get(messageId);
+                    if (!message) return '';
+                    
+                    const indent = '  '.repeat(depth);
+                    let result = `${indent}├─ ${message.sender}: ${message.uuid.substring(0, 8)}\n`;
+                    
+                    if (message.content && message.content.length > 0) {
+                        const textContent = message.content.find(c => c.type === 'text');
+                        if (textContent) {
+                            result += `${indent}   "${textContent.text.substring(0, 40)}..."\n`;
+                        }
+                    }
+                    
+                    message.children.forEach(childId => {
+                        result += printTree(childId, depth + 1);
+                    });
+                    
+                    return result;
+                }
+                
+                rootMessages.forEach(rootId => {
+                    output += printTree(rootId);
+                });
+                
+                results.innerHTML = `<div class="result success">${output}</div>`;
+                
+            } catch (error) {
+                results.innerHTML = `<div class="result error">❌ 错误: ${error.message}</div>`;
+            }
+        }
+        
+        async function openViewerWithData() {
+            try {
+                const response = await fetch('./新json适配/claude_946a2b2a_2025-05-31.json');
+                const data = await response.json();
+                
+                const encodedData = encodeURIComponent(JSON.stringify(data));
+                const viewerUrl = `./viewer.html?data=${encodedData}`;
+                
+                window.open(viewerUrl, '_blank');
+                
+                document.getElementById('results').innerHTML = 
+                    '<div class="result success">✅ 已在新窗口打开查看器</div>';
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    `<div class="result error">❌ 错误: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

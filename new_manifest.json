@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "Claude对话助手 🤖",
+  "version": "2.0.0",
+  "description": "优雅的Claude对话管理工具 - 多分支导出、可视化查看、智能存储",
+  "author": "Claude Assistant Team",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/content.js"],
+      "css": ["styles/content.css"],
+      "run_at": "document_start"
+    }
+  ],
+  
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Claude对话助手"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "viewer/*",
+        "manager/*",
+        "debug/*",
+        "styles/*",
+        "assets/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  
+  "commands": {
+    "export-conversation": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "快速导出当前对话"
+    },
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "切换控制面板"
+    }
+  }
+}

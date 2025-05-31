@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新功能测试 - Claude对话可视化器</title>
+    <link rel="stylesheet" href="viewer/viewer.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--background-color);
+            color: var(--text-primary);
+        }
+        
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--surface-color);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .test-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-demo {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .load-demo-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .load-demo-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 新功能适配测试</h1>
+        <p>测试Claude对话可视化器对新JSON格式的支持</p>
+        
+        <div class="test-section">
+            <div class="test-title">1. 🎨 Artifacts工具支持</div>
+            <div class="test-description">测试artifacts工具调用的可视化效果</div>
+            
+            <div class="feature-demo" id="artifactsDemo">
+                <button class="load-demo-btn" onclick="loadArtifactsDemo()">加载Artifacts演示</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">2. 🔍 网络搜索结果</div>
+            <div class="test-description">测试web_search工具的搜索结果展示</div>
+            
+            <div class="feature-demo" id="searchDemo">
+                <button class="load-demo-btn" onclick="loadSearchDemo()">加载搜索演示</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">3. 🖼️ 图片附件预览</div>
+            <div class="test-description">测试files_v2格式的图片预览功能</div>
+            
+            <div class="feature-demo" id="imageDemo">
+                <button class="load-demo-btn" onclick="loadImageDemo()">加载图片演示</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">4. ⚙️ 对话设置信息</div>
+            <div class="test-description">测试settings字段的解析和显示</div>
+            
+            <div class="feature-demo" id="settingsDemo">
+                <button class="load-demo-btn" onclick="loadSettingsDemo()">加载设置演示</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">5. 📁 完整JSON测试</div>
+            <div class="test-description">加载真实的新格式JSON文件进行测试</div>
+            
+            <div class="feature-demo">
+                <button class="load-demo-btn" onclick="loadRealJson('claude_179bd8ff_2025-05-31.json')">
+                    加载数据库设计对话
+                </button>
+                <button class="load-demo-btn" onclick="loadRealJson('claude_3e2cb7c5_2025-05-31.json')" style="margin-left: 10px;">
+                    加载AI代码执行对话
+                </button>
+                <button class="load-demo-btn" onclick="loadRealJson('claude_946a2b2a_2025-05-31.json')" style="margin-left: 10px;">
+                    加载工具测试对话
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="viewer.js"></script>
+    <script>
+        // 演示数据
+        function loadArtifactsDemo() {
+            // 创建artifacts演示
+            const createArtifact = {
+                name: 'artifacts',
+                input: {
+                    id: 'python_demo',
+                    type: 'application/vnd.ant.code',
+                    title: '简单Python示例',
+                    command: 'create',
+                    content: 'def greet(name):\n    """简单的问候函数"""\n    return f"你好, {name}!"\n\n# 测试函数\nprint(greet("Claude"))\nprint("这是一个Python代码示例")',
+                    language: 'python'
+                }
+            };
+
+            // 更新artifacts演示
+            const updateArtifact = {
+                name: 'artifacts',
+                input: {
+                    id: 'python_demo',
+                    command: 'update',
+                    title: '更新Python示例',
+                    language: 'python',
+                    old_str: 'print(greet("Claude"))\nprint("这是一个Python代码示例")',
+                    new_str: 'print(greet("Claude"))\nprint(greet("世界"))\nprint("这是一个更新的Python代码示例")'
+                }
+            };
+
+            const artifactsResult = {
+                content: [
+                    { type: 'text', text: 'OK' }
+                ],
+                is_error: false
+            };
+
+            const demo = document.getElementById('artifactsDemo');
+            demo.innerHTML = `
+                <h4>创建Artifacts:</h4>
+                ${renderToolUse(createArtifact)}
+                ${renderToolResult(artifactsResult)}
+                <h4 style="margin-top: 2rem;">更新Artifacts:</h4>
+                ${renderToolUse(updateArtifact)}
+                ${renderToolResult(artifactsResult)}
+            `;
+        }
+        
+        function loadSearchDemo() {
+            const searchToolUse = {
+                name: 'web_search',
+                input: {
+                    query: 'AI code execution sandbox implementation browser javascript 2024'
+                }
+            };
+            
+            const searchResult = {
+                content: [
+                    {
+                        type: 'knowledge',
+                        title: 'JavaScript Sandboxing for Secure Code Testing',
+                        url: 'https://example.com/js-sandbox',
+                        metadata: {
+                            site_domain: 'example.com',
+                            site_name: 'Tech Blog',
+                            favicon_url: 'https://example.com/favicon.ico'
+                        },
+                        text: 'JavaScript sandboxing provides a secure way to execute untrusted code in isolated environments...'
+                    },
+                    {
+                        type: 'knowledge',
+                        title: 'WebContainers: Browser-based Development',
+                        url: 'https://webcontainers.io',
+                        metadata: {
+                            site_domain: 'webcontainers.io',
+                            site_name: 'WebContainers'
+                        },
+                        text: 'WebContainers enable full Node.js environments to run directly in the browser using WebAssembly...'
+                    },
+                    {
+                        type: 'text',
+                        text: 'Found 2 relevant results about browser-based code execution.'
+                    }
+                ],
+                is_error: false
+            };
+            
+            const demo = document.getElementById('searchDemo');
+            demo.innerHTML = renderToolUse(searchToolUse) + renderToolResult(searchResult);
+        }
+        
+        function loadImageDemo() {
+            const imageFiles = [
+                {
+                    file_kind: 'image',
+                    file_name: 'diagram.png',
+                    created_at: '2025-05-30T17:00:10.055400+00:00',
+                    thumbnail_url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuekuuS+i+WbvueJhzwvdGV4dD48L3N2Zz4=',
+                    preview_url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuekuuS+i+WbvueJhzwvdGV4dD48L3N2Zz4=',
+                    thumbnail_asset: {
+                        image_width: 200,
+                        image_height: 150
+                    }
+                }
+            ];
+            
+            const demo = document.getElementById('imageDemo');
+            demo.innerHTML = renderAttachments([], [], imageFiles);
+        }
+        
+        function loadSettingsDemo() {
+            const conversationData = {
+                name: '功能测试对话',
+                summary: '这是一个测试对话，展示新的功能特性',
+                uuid: 'test-uuid-12345',
+                created_at: '2025-05-30T17:00:00.000Z',
+                updated_at: '2025-05-30T17:30:00.000Z',
+                is_starred: true,
+                current_leaf_message_uuid: 'leaf-uuid-67890',
+                settings: {
+                    preview_feature_uses_artifacts: true,
+                    enabled_web_search: true
+                },
+                chat_messages: [
+                    { uuid: '1' },
+                    { uuid: '2' },
+                    { uuid: '3' }
+                ]
+            };
+            
+            const demo = document.getElementById('settingsDemo');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = '<div id="tempConversationInfo"></div>';
+            
+            // 临时设置conversationInfo元素
+            const originalElement = window.conversationInfo;
+            window.conversationInfo = tempDiv.querySelector('#tempConversationInfo');
+            
+            renderConversationInfo(conversationData);
+            demo.innerHTML = window.conversationInfo.innerHTML;
+            
+            // 恢复原始元素
+            window.conversationInfo = originalElement;
+        }
+        
+        function loadRealJson(filename) {
+            fetch(`新json适配/${filename}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 在新窗口中打开可视化器
+                    const newWindow = window.open('viewer.html', '_blank');
+                    newWindow.addEventListener('load', () => {
+                        newWindow.postMessage({
+                            type: 'LOAD_JSON',
+                            data: data
+                        }, '*');
+                    });
+                })
+                .catch(error => {
+                    alert('加载文件失败: ' + error.message);
+                });
+        }
+    </script>
+</body>
+</html>

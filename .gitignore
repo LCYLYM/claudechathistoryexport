@@ -1,0 +1,53 @@
+# 忽略所有 Markdown 文档
+*.md
+
+# 忽略私钥文件
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk
+
+# 忽略包含敏感信息的配置文件
+.env
+.env.local
+.env.production
+.env.staging
+config.json
+secrets.json
+
+# 忽略临时文件和缓存
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*.log
+*.cache
+
+# 忽略编辑器和IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 忽略 node_modules (如果有的话)
+node_modules/
+
+# 忽略构建输出
+dist/
+build/
+*.zip
+*.tar.gz
+*.rar 
+
+/新json适配/

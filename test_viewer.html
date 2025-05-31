@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude对话可视化测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .file-input {
+            margin-bottom: 15px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .status.error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+        .viewer-frame {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Claude对话可视化测试</h1>
+        <p>测试新JSON格式的兼容性和可视化功能</p>
+
+        <div class="test-section">
+            <div class="test-title">📁 文件测试</div>
+            <input type="file" id="fileInput" class="file-input" accept=".json" multiple>
+            <button class="btn" onclick="testFiles()">测试选中的文件</button>
+            <button class="btn" onclick="testSampleData()">测试示例数据</button>
+            <div id="fileStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔍 可视化测试</div>
+            <button class="btn" onclick="openOldViewer()">打开旧版可视化</button>
+            <button class="btn" onclick="openNewViewer()">打开新版可视化</button>
+            <button class="btn" onclick="openManager()">打开管理页面</button>
+            <div id="viewerStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📊 数据格式分析</div>
+            <div id="dataAnalysis"></div>
+        </div>
+    </div>
+
+    <script>
+        let testData = null;
+
+        // 测试文件
+        async function testFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            const statusDiv = document.getElementById('fileStatus');
+            
+            if (files.length === 0) {
+                statusDiv.innerHTML = '<div class="status error">请选择JSON文件</div>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="status">正在分析文件...</div>';
+            
+            let results = [];
+            for (let file of files) {
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    
+                    const analysis = analyzeData(data);
+                    results.push({
+                        fileName: file.name,
+                        success: true,
+                        analysis: analysis
+                    });
+                    
+                    if (!testData) testData = data; // 保存第一个成功的数据用于测试
+                } catch (error) {
+                    results.push({
+                        fileName: file.name,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+            
+            displayFileResults(results);
+        }
+
+        // 分析数据格式
+        function analyzeData(data) {
+            const analysis = {
+                uuid: data.uuid || '无',
+                name: data.name || '无标题',
+                messageCount: data.chat_messages?.length || 0,
+                format: 'unknown',
+                hasContent: false,
+                hasText: false,
+                hasTools: false,
+                hasAttachments: false
+            };
+
+            if (data.chat_messages && data.chat_messages.length > 0) {
+                const firstMessage = data.chat_messages[0];
+                
+                if (firstMessage.content && Array.isArray(firstMessage.content)) {
+                    analysis.format = 'new';
+                    analysis.hasContent = true;
+                    
+                    // 检查是否有工具使用
+                    analysis.hasTools = data.chat_messages.some(msg => 
+                        msg.content?.some(block => block.type === 'tool_use' || block.type === 'tool_result')
+                    );
+                } else if (firstMessage.text) {
+                    analysis.format = 'old';
+                    analysis.hasText = true;
+                }
+                
+                // 检查附件
+                analysis.hasAttachments = data.chat_messages.some(msg => 
+                    (msg.attachments && msg.attachments.length > 0) || 
+                    (msg.files && msg.files.length > 0)
+                );
+            }
+
+            return analysis;
+        }
+
+        // 显示文件测试结果
+        function displayFileResults(results) {
+            const statusDiv = document.getElementById('fileStatus');
+            const analysisDiv = document.getElementById('dataAnalysis');
+            
+            let html = '';
+            let analysisHtml = '';
+            
+            results.forEach(result => {
+                if (result.success) {
+                    html += `<div class="status success">✅ ${result.fileName} - 解析成功</div>`;
+                    analysisHtml += `
+                        <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 6px;">
+                            <h4>${result.fileName}</h4>
+                            <p><strong>格式:</strong> ${result.analysis.format === 'new' ? '新格式 (content数组)' : result.analysis.format === 'old' ? '旧格式 (text字段)' : '未知格式'}</p>
+                            <p><strong>对话ID:</strong> ${result.analysis.uuid}</p>
+                            <p><strong>标题:</strong> ${result.analysis.name}</p>
+                            <p><strong>消息数:</strong> ${result.analysis.messageCount}</p>
+                            <p><strong>包含工具:</strong> ${result.analysis.hasTools ? '是' : '否'}</p>
+                            <p><strong>包含附件:</strong> ${result.analysis.hasAttachments ? '是' : '否'}</p>
+                        </div>
+                    `;
+                } else {
+                    html += `<div class="status error">❌ ${result.fileName} - ${result.error}</div>`;
+                }
+            });
+            
+            statusDiv.innerHTML = html;
+            analysisDiv.innerHTML = analysisHtml;
+        }
+
+        // 测试示例数据
+        function testSampleData() {
+            const sampleData = {
+                "uuid": "test-uuid-123",
+                "name": "测试对话",
+                "created_at": "2025-05-31T10:00:00Z",
+                "updated_at": "2025-05-31T10:05:00Z",
+                "chat_messages": [
+                    {
+                        "uuid": "msg-1",
+                        "sender": "human",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "你好，这是一个测试消息。"
+                            }
+                        ],
+                        "created_at": "2025-05-31T10:00:00Z"
+                    },
+                    {
+                        "uuid": "msg-2", 
+                        "sender": "assistant",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "你好！我是Claude，很高兴为您服务。这是新格式的回复。"
+                            }
+                        ],
+                        "created_at": "2025-05-31T10:01:00Z"
+                    }
+                ]
+            };
+            
+            testData = sampleData;
+            const analysis = analyzeData(sampleData);
+            
+            document.getElementById('fileStatus').innerHTML = 
+                '<div class="status success">✅ 示例数据加载成功</div>';
+            
+            document.getElementById('dataAnalysis').innerHTML = `
+                <div style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 6px;">
+                    <h4>示例数据</h4>
+                    <p><strong>格式:</strong> ${analysis.format === 'new' ? '新格式 (content数组)' : '旧格式 (text字段)'}</p>
+                    <p><strong>消息数:</strong> ${analysis.messageCount}</p>
+                </div>
+            `;
+        }
+
+        // 打开可视化页面
+        function openOldViewer() {
+            if (!testData) {
+                alert('请先加载测试数据');
+                return;
+            }
+            
+            const url = 'viewer.html';
+            const newWindow = window.open(url, '_blank');
+            
+            // 等待页面加载后传递数据
+            setTimeout(() => {
+                try {
+                    newWindow.postMessage({
+                        type: 'loadData',
+                        data: testData
+                    }, '*');
+                } catch (error) {
+                    console.error('传递数据失败:', error);
+                }
+            }, 1000);
+        }
+
+        function openNewViewer() {
+            if (!testData) {
+                alert('请先加载测试数据');
+                return;
+            }
+            
+            const url = 'viewer/viewer.html';
+            const newWindow = window.open(url, '_blank');
+            
+            setTimeout(() => {
+                try {
+                    newWindow.postMessage({
+                        type: 'loadData',
+                        data: testData
+                    }, '*');
+                } catch (error) {
+                    console.error('传递数据失败:', error);
+                }
+            }, 1000);
+        }
+
+        function openManager() {
+            window.open('manager/manager.html', '_blank');
+        }
+    </script>
+</body>
+</html>

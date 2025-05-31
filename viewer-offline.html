@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude对话查看器 (离线版)</title>
+    <link rel="stylesheet" href="viewer.css">
+    <style>
+        /* 简单的Markdown样式 */
+        .content-text h1, .content-text h2, .content-text h3 {
+            margin: 16px 0 8px 0;
+            font-weight: bold;
+        }
+        .content-text h1 { font-size: 1.5em; }
+        .content-text h2 { font-size: 1.3em; }
+        .content-text h3 { font-size: 1.1em; }
+        .content-text p { margin: 8px 0; }
+        .content-text ul, .content-text ol { margin: 8px 0; padding-left: 20px; }
+        .content-text li { margin: 4px 0; }
+        .content-text code {
+            background: #f1f5f9;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .content-text pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        .content-text blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: #64748b;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer-container">
+        <!-- 头部工具栏 -->
+        <header class="viewer-header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                <div class="header-info">
+                    <h1>Claude对话查看器 (离线版)</h1>
+                    <p id="conversation-title">请上传JSON文件</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="upload-json">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    上传JSON
+                </button>
+                <button class="btn btn-secondary" id="export-html" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    导出HTML
+                </button>
+            </div>
+        </header>
+
+        <!-- 主内容区域 -->
+        <main class="viewer-main">
+            <!-- 上传区域 -->
+            <div class="upload-area" id="upload-area">
+                <div class="upload-content">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" class="upload-icon">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <h3>拖拽JSON文件到此处</h3>
+                    <p>或点击上方"上传JSON"按钮选择文件</p>
+                    <p class="upload-hint">支持Claude导出的多分支对话JSON文件 (离线版本)</p>
+                </div>
+            </div>
+
+            <!-- 对话内容区域 -->
+            <div class="conversation-content" id="conversation-content" style="display: none;">
+                <!-- 对话信息面板 -->
+                <div class="conversation-info" id="conversation-info">
+                    <!-- 动态生成 -->
+                </div>
+
+                <!-- 控制面板 -->
+                <div class="conversation-controls">
+                    <div class="view-options">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-tree-view" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">树形视图</span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-timestamps" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">显示时间戳</span>
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-tools" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">显示工具调用</span>
+                        </label>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="搜索对话内容...">
+                        <button id="search-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 对话树形结构 -->
+                <div class="conversation-tree" id="conversation-tree">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="file-input" accept=".json" style="display: none;">
+
+    <script>
+        // 简化版的ConversationViewer，不依赖外部库
+        class OfflineConversationViewer {
+            constructor() {
+                this.currentData = null;
+                this.messageTree = new Map();
+                this.rootMessages = [];
+                this.searchTerm = '';
+                this.viewOptions = {
+                    showTreeView: true,
+                    showTimestamps: true,
+                    showTools: true
+                };
+                
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.loadFromUrl();
+            }
+
+            bindEvents() {
+                // 文件上传
+                const fileInput = document.getElementById('file-input');
+                const uploadBtn = document.getElementById('upload-json');
+                const uploadArea = document.getElementById('upload-area');
+
+                uploadBtn.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+                // 拖拽上传
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    this.handleFiles(e.dataTransfer.files);
+                });
+
+                // 视图选项
+                document.getElementById('show-tree-view').addEventListener('change', (e) => {
+                    this.viewOptions.showTreeView = e.target.checked;
+                    this.renderConversation();
+                });
+
+                document.getElementById('show-timestamps').addEventListener('change', (e) => {
+                    this.viewOptions.showTimestamps = e.target.checked;
+                    this.renderConversation();
+                });
+
+                document.getElementById('show-tools').addEventListener('change', (e) => {
+                    this.viewOptions.showTools = e.target.checked;
+                    this.renderConversation();
+                });
+
+                // 搜索
+                document.getElementById('search-btn').addEventListener('click', () => this.performSearch());
+                document.getElementById('search-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.performSearch();
+                });
+
+                // 导出
+                document.getElementById('export-html').addEventListener('click', () => this.exportToHtml());
+            }
+
+            async handleFiles(files) {
+                if (files.length === 0) return;
+                
+                const file = files[0];
+                if (!file.name.endsWith('.json')) {
+                    alert('请选择JSON文件');
+                    return;
+                }
+
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    this.loadConversationData(data);
+                } catch (error) {
+                    alert('文件格式错误: ' + error.message);
+                }
+            }
+
+            loadFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataParam = urlParams.get('data');
+                if (dataParam) {
+                    try {
+                        const data = JSON.parse(decodeURIComponent(dataParam));
+                        this.loadConversationData(data);
+                    } catch (error) {
+                        console.error('URL数据解析失败:', error);
+                    }
+                }
+            }
+
+            loadConversationData(data) {
+                console.log('🔄 加载对话数据:', data.name);
+                this.currentData = data;
+                this.buildMessageTree();
+                this.renderConversationInfo();
+                this.renderConversation();
+                this.showConversationContent();
+                
+                document.getElementById('export-html').style.display = 'inline-flex';
+            }
+
+            buildMessageTree() {
+                this.messageTree.clear();
+                this.rootMessages = [];
+
+                if (!this.currentData.chat_messages) {
+                    console.log('❌ 没有找到chat_messages');
+                    return;
+                }
+
+                console.log(`📊 开始构建消息树，共 ${this.currentData.chat_messages.length} 条消息`);
+
+                // 首先将所有消息添加到map中
+                this.currentData.chat_messages.forEach(message => {
+                    this.messageTree.set(message.uuid, {
+                        ...message,
+                        children: []
+                    });
+                });
+
+                // 然后建立父子关系
+                this.currentData.chat_messages.forEach(message => {
+                    const hasValidParent = message.parent_message_uuid && 
+                                         message.parent_message_uuid !== "00000000-0000-4000-8000-000000000000";
+
+                    if (hasValidParent) {
+                        const parent = this.messageTree.get(message.parent_message_uuid);
+                        if (parent) {
+                            parent.children.push(message.uuid);
+                        } else {
+                            this.rootMessages.push(message.uuid);
+                        }
+                    } else {
+                        this.rootMessages.push(message.uuid);
+                    }
+                });
+
+                // 按时间排序
+                this.rootMessages.sort((a, b) => {
+                    const messageA = this.messageTree.get(a);
+                    const messageB = this.messageTree.get(b);
+                    return new Date(messageA.created_at) - new Date(messageB.created_at);
+                });
+
+                console.log(`🌳 消息树构建完成: ${this.rootMessages.length} 个根消息`);
+            }
+
+            renderConversationInfo() {
+                const info = document.getElementById('conversation-info');
+                const data = this.currentData;
+                
+                const createdAt = new Date(data.created_at).toLocaleString('zh-CN');
+                const updatedAt = new Date(data.updated_at).toLocaleString('zh-CN');
+                const messageCount = data.chat_messages ? data.chat_messages.length : 0;
+                
+                info.innerHTML = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">对话标题</div>
+                            <div class="info-value">${data.name || '未命名对话'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">消息数量</div>
+                            <div class="info-value">${messageCount}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">创建时间</div>
+                            <div class="info-value">${createdAt}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">更新时间</div>
+                            <div class="info-value">${updatedAt}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('conversation-title').textContent = data.name || '未命名对话';
+            }
+
+            renderConversation() {
+                console.log('🎨 开始渲染对话');
+                const container = document.getElementById('conversation-tree');
+                
+                if (!container) {
+                    console.error('❌ 找不到conversation-tree容器');
+                    return;
+                }
+                
+                container.innerHTML = '';
+
+                if (this.rootMessages.length === 0) {
+                    container.innerHTML = '<div class="no-messages">没有找到消息</div>';
+                    return;
+                }
+
+                console.log(`✅ 开始渲染 ${this.rootMessages.length} 条消息`);
+                this.rootMessages.forEach((messageId, index) => {
+                    this.renderMessageNode(container, messageId, 0);
+                });
+                console.log('🎨 对话渲染完成');
+            }
+
+            renderMessageNode(container, messageId, depth) {
+                const message = this.messageTree.get(messageId);
+                if (!message) return;
+
+                const messageElement = this.createMessageElement(message, depth);
+                container.appendChild(messageElement);
+
+                if (this.viewOptions.showTreeView && message.children.length > 0) {
+                    message.children.forEach(childId => {
+                        this.renderMessageNode(container, childId, depth + 1);
+                    });
+                }
+            }
+
+            createMessageElement(message, depth) {
+                const div = document.createElement('div');
+                div.className = `message-node ${depth > 0 ? 'branch-indicator' : ''}`;
+                div.style.marginLeft = `${depth * 20}px`;
+
+                const senderClass = message.sender === 'human' ? 'sender-human' : 'sender-assistant';
+                const senderName = message.sender === 'human' ? '用户' : 'Claude';
+                const senderInitial = message.sender === 'human' ? 'U' : 'C';
+
+                const timestamp = this.viewOptions.showTimestamps ? 
+                    `<div class="message-timestamp">${new Date(message.created_at).toLocaleString('zh-CN')}</div>` : '';
+
+                div.innerHTML = `
+                    <div class="message-header">
+                        <div class="message-sender ${senderClass}">
+                            <div class="sender-avatar">${senderInitial}</div>
+                            <span>${senderName}</span>
+                        </div>
+                        ${timestamp}
+                    </div>
+                    <div class="message-content">
+                        ${this.renderMessageContent(message)}
+                    </div>
+                `;
+
+                return div;
+            }
+
+            renderMessageContent(message) {
+                let contentHtml = '';
+
+                // 处理新格式的content数组
+                if (message.content && Array.isArray(message.content) && message.content.length > 0) {
+                    contentHtml = message.content.map(content => {
+                        return this.renderContentBlock(content);
+                    }).join('');
+                }
+                // 处理旧格式的text字段
+                else if (message.text) {
+                    contentHtml = this.renderTextContent(message.text);
+                }
+                else {
+                    contentHtml = '<div class="content-text">无内容</div>';
+                }
+
+                return contentHtml;
+            }
+
+            renderContentBlock(content) {
+                let contentHtml = '';
+
+                switch (content.type) {
+                    case 'text':
+                        contentHtml = this.renderTextContent(content.text);
+                        break;
+                    case 'tool_use':
+                        contentHtml = this.viewOptions.showTools ? this.renderToolUse(content) : '';
+                        break;
+                    case 'tool_result':
+                        contentHtml = this.viewOptions.showTools ? this.renderToolResult(content) : '';
+                        break;
+                    default:
+                        contentHtml = `<div class="content-unknown">
+                            <strong>未知内容类型:</strong> ${content.type}
+                        </div>`;
+                }
+
+                return contentHtml;
+            }
+
+            renderTextContent(text) {
+                if (!text) return '';
+                
+                // 简单的文本处理，不依赖marked
+                const escaped = this.escapeHtml(text);
+                const withBreaks = escaped.replace(/\n/g, '<br>');
+                
+                return `<div class="content-block"><div class="content-text">${withBreaks}</div></div>`;
+            }
+
+            renderToolUse(toolUse) {
+                const toolName = toolUse.name || '未知工具';
+                const inputJson = JSON.stringify(toolUse.input || {}, null, 2);
+
+                return `
+                    <div class="content-block">
+                        <div class="tool-use">
+                            <div class="tool-header">
+                                🔧 工具调用: <strong>${toolName}</strong>
+                            </div>
+                            <div class="tool-input"><pre>${inputJson}</pre></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderToolResult(toolResult) {
+                let resultContent = '';
+                if (toolResult.content) {
+                    if (typeof toolResult.content === 'string') {
+                        resultContent = this.escapeHtml(toolResult.content);
+                    } else {
+                        resultContent = JSON.stringify(toolResult.content, null, 2);
+                    }
+                }
+
+                return `
+                    <div class="content-block">
+                        <div class="tool-result">
+                            <div class="tool-result-header">
+                                ✅ 工具结果
+                            </div>
+                            <div class="tool-result-content"><pre>${resultContent}</pre></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            showConversationContent() {
+                document.getElementById('upload-area').style.display = 'none';
+                document.getElementById('conversation-content').style.display = 'flex';
+            }
+
+            performSearch() {
+                this.searchTerm = document.getElementById('search-input').value.toLowerCase();
+                this.renderConversation();
+            }
+
+            exportToHtml() {
+                if (!this.currentData) return;
+                
+                const conversationHtml = document.getElementById('conversation-tree').innerHTML;
+                const infoHtml = document.getElementById('conversation-info').innerHTML;
+                
+                const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${this.currentData.name || '未命名对话'} - Claude对话导出</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; }
+        .conversation-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .message-node { background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px; padding: 16px; }
+        .message-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: bold; }
+        .sender-human { color: #667eea; }
+        .sender-assistant { color: #f093fb; }
+        .content-text { line-height: 1.6; }
+        .tool-use, .tool-result { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 12px; margin: 8px 0; }
+        pre { background: #f8f9fa; padding: 8px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Claude对话导出</h1>
+    <p>导出时间: ${new Date().toLocaleString('zh-CN')}</p>
+    <div class="conversation-info">${infoHtml}</div>
+    <div class="conversation-tree">${conversationHtml}</div>
+</body>
+</html>
+                `;
+                
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `claude_conversation_${this.currentData.uuid.substring(0, 8)}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // 初始化查看器
+        const viewer = new OfflineConversationViewer();
+        window.viewer = viewer;
+    </script>
+</body>
+</html>

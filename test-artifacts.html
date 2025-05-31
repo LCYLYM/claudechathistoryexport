@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artifacts测试 - Claude对话可视化器</title>
+    <link rel="stylesheet" href="viewer/viewer.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--background-color);
+            color: var(--text-primary);
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--surface-color);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
+        
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .test-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎨 Artifacts和Markdown优化测试</h1>
+        
+        <div class="test-section">
+            <div class="test-title">1. HTML Artifacts测试</div>
+            <div class="test-description">测试HTML代码的预览和代码切换功能</div>
+            
+            <div class="text-content" id="artifactTest">
+                <!-- 这里会被JavaScript填充 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">2. Markdown渲染测试</div>
+            <div class="test-description">测试改进的Markdown语法处理</div>
+            
+            <div class="text-content" id="markdownTest">
+                <!-- 这里会被JavaScript填充 -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">3. 工具调用样式测试</div>
+            <div class="test-description">测试工具调用和结果的显示效果</div>
+            
+            <div id="toolTest">
+                <!-- 这里会被JavaScript填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="viewer.js"></script>
+    <script>
+        // 测试数据
+        const testArtifactText = `这是一个包含HTML artifacts的测试文本：
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI数据分析平台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-area {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🤖 AI数据分析平台</h1>
+            <p class="subtitle">安全的浏览器端代码执行 • 实时数据分析 • 智能可视化</p>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title">沙箱保护</div>
+                <p>在安全的浏览器环境中执行代码，保护您的系统安全</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">零配置</div>
+                <p>无需安装任何软件，直接在浏览器中开始数据分析</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔧</div>
+                <div class="feature-title">Web Workers</div>
+                <p>利用多线程处理，确保界面响应流畅</p>
+            </div>
+        </div>
+        
+        <div class="upload-area">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📁</div>
+            <h2>数据上传</h2>
+            <p>拖拽文件到此处或点击选择文件</p>
+            <p style="opacity: 0.7; font-size: 0.9rem;">支持 CSV, JSON, Excel 等格式</p>
+        </div>
+    </div>
+</body>
+</html>
+\`\`\`
+
+这个HTML页面展示了一个现代化的AI数据分析平台界面。`;
+
+        const testMarkdownText = `# 这是一级标题
+
+## 这是二级标题
+
+### 这是三级标题
+
+这是一段普通文本，包含**粗体文字**和*斜体文字*。
+
+这里有一个[链接示例](https://example.com)。
+
+下面是一个列表：
+- 第一项内容
+- 第二项内容
+- 第三项内容
+
+这里有一些\`行内代码\`示例。
+
+\`\`\`javascript
+// 这是一个代码块
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+> 这是一个引用块
+> 可以包含多行内容`;
+
+        // 渲染测试内容
+        document.addEventListener('DOMContentLoaded', function() {
+            // 测试artifacts
+            const artifactResult = renderArtifacts(testArtifactText);
+            document.getElementById('artifactTest').innerHTML = renderMarkdown(artifactResult.processedText);
+            
+            // 测试markdown
+            document.getElementById('markdownTest').innerHTML = renderMarkdown(testMarkdownText);
+            
+            // 测试工具调用
+            const toolUseHtml = renderToolUse({
+                name: 'web-search',
+                input: {
+                    query: 'Claude AI assistant features',
+                    num_results: 5
+                }
+            });
+            
+            const toolResultHtml = renderToolResult({
+                content: 'Search completed successfully. Found 5 relevant results about Claude AI features.',
+                is_error: false
+            });
+            
+            document.getElementById('toolTest').innerHTML = toolUseHtml + toolResultHtml;
+        });
+    </script>
+</body>
+</html>
