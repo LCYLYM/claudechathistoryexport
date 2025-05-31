@@ -26,29 +26,34 @@ class ConversationViewer {
             this.selectFile();
         });
 
-        // 拖拽上传
+        // 全局拖拽支持（即使已经有对话也可以拖拽新文件）
+        this.setupGlobalDragDrop();
+
+        // 上传区域拖拽
         const uploadArea = document.getElementById('upload-area');
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                this.loadFile(files[0]);
-            }
-        });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.loadFile(files[0]);
+                }
+            });
 
-        uploadArea.addEventListener('click', () => {
-            this.selectFile();
-        });
+            uploadArea.addEventListener('click', () => {
+                this.selectFile();
+            });
+        }
 
         // 视图选项
         document.getElementById('show-tree-view').addEventListener('change', (e) => {
@@ -77,9 +82,9 @@ class ConversationViewer {
             }
         });
 
-        // 从存储加载
-        document.getElementById('load-from-storage').addEventListener('click', () => {
-            this.showStorageSidebar();
+        // 打开存储管理页面
+        document.getElementById('open-storage-manager').addEventListener('click', () => {
+            this.openStorageManager();
         });
 
         // 导出HTML
@@ -96,6 +101,50 @@ class ConversationViewer {
         document.getElementById('close-sidebar').addEventListener('click', () => {
             this.hideStorageSidebar();
         });
+
+        // 事件委托处理所有按钮点击
+        this.setupEventDelegation();
+    }
+
+    setupEventDelegation() {
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const action = target.getAttribute('data-action');
+
+            if (action) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                switch (action) {
+                    case 'close-modal':
+                        this.closeModal();
+                        break;
+                    case 'show-image':
+                        const imageUrl = target.getAttribute('data-image-url');
+                        const imageName = target.getAttribute('data-image-name');
+                        this.showImagePreview(imageUrl, imageName);
+                        break;
+                    case 'load-stored':
+                        const loadConversationId = target.getAttribute('data-conversation-id');
+                        this.loadStoredConversation(loadConversationId);
+                        break;
+                    case 'delete-stored':
+                        const deleteConversationId = target.getAttribute('data-conversation-id');
+                        this.deleteStoredConversation(deleteConversationId);
+                        break;
+                }
+                return;
+            }
+
+            // 处理对话选择器项目点击
+            const selectorItem = target.closest('.conversation-selector-item');
+            if (selectorItem) {
+                const index = parseInt(selectorItem.getAttribute('data-conversation-index'));
+                if (!isNaN(index)) {
+                    this.loadConversationFromSelector(index);
+                }
+            }
+        });
     }
 
     selectFile() {
@@ -110,13 +159,106 @@ class ConversationViewer {
         input.click();
     }
 
+    setupGlobalDragDrop() {
+        // 全局拖拽支持
+        let dragCounter = 0;
+
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            this.showDragOverlay();
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) {
+                this.hideDragOverlay();
+            }
+        });
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            this.hideDragOverlay();
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.loadFile(files[0]);
+            }
+        });
+    }
+
+    showDragOverlay() {
+        let overlay = document.getElementById('drag-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'drag-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(102, 126, 234, 0.9);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                backdrop-filter: blur(4px);
+            `;
+            overlay.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+                    <div>拖拽JSON文件到此处</div>
+                    <div style="font-size: 16px; margin-top: 10px; opacity: 0.8;">支持单个对话或导出的多对话文件</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        overlay.style.display = 'flex';
+    }
+
+    hideDragOverlay() {
+        const overlay = document.getElementById('drag-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+
     async loadFile(file) {
         try {
             const text = await file.text();
             const data = JSON.parse(text);
-            this.loadConversationData(data);
+
+            // 检查是否是导出的多对话文件
+            if (data.type === 'claude_conversations_export' && data.conversations) {
+                this.handleMultiConversationImport(data);
+            } else {
+                this.loadConversationData(data);
+            }
         } catch (error) {
             this.showError('文件格式错误: ' + error.message);
+        }
+    }
+
+    handleMultiConversationImport(exportData) {
+        const conversations = exportData.conversations;
+
+        if (conversations.length === 1) {
+            // 只有一个对话，直接加载
+            this.loadConversationData(conversations[0]);
+            this.showToast(`已加载对话: ${conversations[0].name}`, 'success');
+        } else {
+            // 多个对话，显示选择界面
+            this.showConversationSelector(conversations);
         }
     }
 
@@ -134,13 +276,69 @@ class ConversationViewer {
         }
     }
 
+    showConversationSelector(conversations) {
+        const modal = document.getElementById('details-modal');
+        const title = document.getElementById('modal-title');
+        const body = document.getElementById('modal-body');
+
+        title.textContent = '选择要查看的对话';
+
+        const conversationList = conversations.map((conv, index) => {
+            const messageCount = conv.chat_messages ? conv.chat_messages.length : 0;
+            const createdAt = new Date(conv.created_at).toLocaleDateString('zh-CN');
+
+            return `
+                <div class="conversation-selector-item" data-conversation-index="${index}" style="
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                ">
+                    <div style="font-weight: 600; margin-bottom: 8px;">${conv.name || '未命名对话'}</div>
+                    <div style="font-size: 14px; color: #64748b;">
+                        <span>📅 ${createdAt}</span>
+                        <span style="margin-left: 16px;">💬 ${messageCount} 条消息</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        body.innerHTML = `
+            <div style="margin-bottom: 16px;">
+                <p>检测到 ${conversations.length} 个对话，请选择要查看的对话：</p>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                ${conversationList}
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn btn-secondary" data-action="close-modal">取消</button>
+            </div>
+        `;
+
+        // 保存对话列表供选择使用
+        this.pendingConversations = conversations;
+        modal.style.display = 'flex';
+    }
+
+    loadConversationFromSelector(index) {
+        if (this.pendingConversations && this.pendingConversations[index]) {
+            const conversation = this.pendingConversations[index];
+            this.loadConversationData(conversation);
+            this.showToast(`已加载对话: ${conversation.name}`, 'success');
+            this.closeModal();
+        }
+    }
+
     loadConversationData(data) {
+        console.log('🔄 加载对话数据:', data.name);
         this.currentData = data;
         this.buildMessageTree();
         this.renderConversationInfo();
         this.renderConversation();
         this.showConversationContent();
-        
+
         // 显示导出按钮
         document.getElementById('export-html').style.display = 'inline-flex';
     }
@@ -470,7 +668,7 @@ class ConversationViewer {
                 <div class="attachment-item image-file">
                     <div class="image-preview">
                         ${thumbnailUrl ?
-                            `<img src="${thumbnailUrl}" alt="${fileName}" onclick="viewer.showImagePreview('${previewUrl || thumbnailUrl}', '${fileName}')" style="max-width: 100px; max-height: 100px; cursor: pointer; border-radius: 4px;">` :
+                            `<img src="${thumbnailUrl}" alt="${fileName}" data-action="show-image" data-image-url="${previewUrl || thumbnailUrl}" data-image-name="${fileName}" style="max-width: 100px; max-height: 100px; cursor: pointer; border-radius: 4px;">` :
                             '<div class="image-placeholder">🖼️</div>'
                         }
                     </div>
@@ -979,8 +1177,8 @@ class ConversationViewer {
                             <div class="conversation-domain">${conv.domain}</div>
                         </div>
                         <div class="conversation-actions">
-                            <button class="btn btn-small" onclick="viewer.loadStoredConversation('${conv.id}')">加载</button>
-                            <button class="btn btn-small btn-danger" onclick="viewer.deleteStoredConversation('${conv.id}')">删除</button>
+                            <button class="btn btn-small" data-action="load-stored" data-conversation-id="${conv.id}">加载</button>
+                            <button class="btn btn-small btn-danger" data-action="delete-stored" data-conversation-id="${conv.id}">删除</button>
                         </div>
                     </div>
                 `).join('');
@@ -1024,6 +1222,11 @@ class ConversationViewer {
         document.getElementById('storage-sidebar').classList.remove('show');
     }
 
+    openStorageManager() {
+        const managerUrl = chrome.runtime.getURL('manager.html');
+        window.open(managerUrl, '_blank', 'width=1200,height=800');
+    }
+
     exportToHtml() {
         if (!this.currentData) return;
         
@@ -1042,7 +1245,10 @@ class ConversationViewer {
     generateHtmlExport() {
         const conversationHtml = document.getElementById('conversation-tree').innerHTML;
         const infoHtml = document.getElementById('conversation-info').innerHTML;
-        
+        const messageCount = this.currentData.chat_messages ? this.currentData.chat_messages.length : 0;
+        const createdAt = new Date(this.currentData.created_at).toLocaleDateString('zh-CN');
+        const exportTime = new Date().toLocaleString('zh-CN');
+
         return `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -1051,21 +1257,241 @@ class ConversationViewer {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${this.currentData.name || '未命名对话'} - Claude对话导出</title>
     <style>
-        ${document.querySelector('link[href="viewer.css"]')?.sheet?.cssText || ''}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .export-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .export-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .export-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .export-header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .export-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .export-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .conversation-info {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+
+        .message-node {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .message-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .sender-human {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .sender-assistant {
+            color: #764ba2;
+            font-weight: 600;
+        }
+
+        .sender-avatar {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            line-height: 32px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .message-timestamp {
+            font-size: 0.85em;
+            color: #64748b;
+        }
+
+        .content-text {
+            line-height: 1.8;
+            color: #374151;
+        }
+
+        .content-text h1, .content-text h2, .content-text h3 {
+            margin: 16px 0 8px 0;
+            color: #1e293b;
+        }
+
+        .content-text code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+
+        .content-text pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .tool-use, .tool-result {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .tool-header {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 8px;
+        }
+
+        .export-footer {
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-logo {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .export-container {
+                padding: 10px;
+            }
+
+            .export-header {
+                padding: 20px;
+            }
+
+            .export-header h1 {
+                font-size: 1.8em;
+            }
+
+            .export-meta {
+                gap: 15px;
+            }
+
+            .export-content {
+                padding: 20px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .export-header {
+                background: #667eea !important;
+                -webkit-print-color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="viewer-container">
-        <header class="viewer-header">
-            <h1>Claude对话导出</h1>
-            <p>导出时间: ${new Date().toLocaleString('zh-CN')}</p>
-        </header>
-        <main class="viewer-main">
-            <div class="conversation-content" style="display: flex;">
-                <div class="conversation-info">${infoHtml}</div>
-                <div class="conversation-tree">${conversationHtml}</div>
+    <div class="export-container">
+        <header class="export-header">
+            <h1>🐟 Claude对话导出</h1>
+            <div class="subtitle">${this.currentData.name || '未命名对话'}</div>
+            <div class="export-meta">
+                <div class="meta-item">📅 创建时间: ${createdAt}</div>
+                <div class="meta-item">💬 消息数量: ${messageCount}</div>
+                <div class="meta-item">⏰ 导出时间: ${exportTime}</div>
             </div>
-        </main>
+        </header>
+
+        <div class="export-content">
+            <div class="conversation-info">${infoHtml}</div>
+            <div class="conversation-tree">${conversationHtml}</div>
+        </div>
+
+        <footer class="export-footer">
+            <div class="footer-logo">🐟✨</div>
+            <p><strong>Made with ❤️ by Claude对话管理中心</strong></p>
+            <p style="color: #64748b; margin-top: 10px;">让每一次对话都值得珍藏</p>
+        </footer>
     </div>
 </body>
 </html>
@@ -1080,7 +1506,43 @@ class ConversationViewer {
     }
 
     showError(message) {
-        alert('错误: ' + message);
+        this.showToast('错误: ' + message, 'error');
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `viewer-toast viewer-toast-${type}`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+            font-size: 14px;
+        `;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
     }
 }
 

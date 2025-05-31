@@ -172,7 +172,7 @@
                 </div>
                 
                 <div class="claude-footer">
-                    <div class="claude-author" onclick="showAuthorEasterEgg()" style="cursor: pointer;">
+                    <div class="claude-author" id="claude-author-link" style="cursor: pointer;">
                         <span>Made with 🐟 by Claude Assistant</span>
                     </div>
                 </div>
@@ -205,6 +205,9 @@
 
         // 调试信息
         document.getElementById('debug-info').addEventListener('click', showDebugInfo);
+
+        // 作者彩蛋
+        document.getElementById('claude-author-link').addEventListener('click', showAuthorEasterEgg);
     }
 
     // 导出多分支JSON
@@ -266,8 +269,47 @@
     }
 
     // 打开可视化查看器
-    function openViewer() {
+    async function openViewer() {
         const viewerUrl = chrome.runtime.getURL('viewer.html');
+
+        // 如果在对话页面，尝试直接加载当前对话
+        if (isInChatPage()) {
+            const uuid = getCurrentChatUUID();
+            const userId = await getUserId();
+
+            if (uuid && userId) {
+                try {
+                    showToast('正在获取当前对话数据...', 'info');
+
+                    const apiUrl = `${getCurrentDomain()}/api/organizations/${userId}/chat_conversations/${uuid}?tree=True&rendering_mode=messages&render_all_tools=true`;
+                    const response = await fetch(apiUrl);
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        // 保存到本地存储
+                        try {
+                            await chrome.runtime.sendMessage({
+                                type: 'SAVE_CONVERSATION',
+                                data: data
+                            });
+                        } catch (storageError) {
+                            console.warn('保存到本地存储失败:', storageError);
+                        }
+
+                        const dataParam = encodeURIComponent(JSON.stringify(data));
+                        window.open(`${viewerUrl}?data=${dataParam}`, '_blank', 'width=1400,height=900');
+                        showToast('已在查看器中打开当前对话', 'success');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('获取当前对话失败，打开空白查看器:', error);
+                    showToast('获取当前对话失败，打开空白查看器', 'error');
+                }
+            }
+        }
+
+        // 打开空白查看器
         window.open(viewerUrl, '_blank', 'width=1400,height=900');
     }
 
@@ -406,7 +448,7 @@ ${!userId ? '\n⚠️ 用户ID获取失败，请尝试:\n1. 刷新页面\n2. 发
         easterEgg.innerHTML = `
             <div style="font-size: 48px; margin-bottom: 16px;">🐟✨</div>
             <div style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">${randomMessage}</div>
-            <button onclick="this.parentElement.remove()" style="
+            <button class="easter-egg-close-btn" style="
                 background: rgba(255, 255, 255, 0.2);
                 border: 1px solid rgba(255, 255, 255, 0.3);
                 color: white;
@@ -415,11 +457,16 @@ ${!userId ? '\n⚠️ 用户ID获取失败，请尝试:\n1. 刷新页面\n2. 发
                 cursor: pointer;
                 font-size: 14px;
                 transition: all 0.3s ease;
-            " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'"
-               onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+            ">
                 谢谢Claude！🎉
             </button>
         `;
+
+        // 添加事件监听器
+        const closeBtn = easterEgg.querySelector('.easter-egg-close-btn');
+        closeBtn.addEventListener('click', () => easterEgg.remove());
+        closeBtn.addEventListener('mouseover', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.3)');
+        closeBtn.addEventListener('mouseout', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)');
 
         // 添加动画样式
         const style = document.createElement('style');

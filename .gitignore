@@ -1,5 +1,7 @@
-# 忽略所有 Markdown 文档
+# 忽略所有 Markdown 文档，除了 readme.md
 *.md
+!readme.md
+!README.md
 
 # 忽略私钥文件
 *.key
@@ -48,6 +50,6 @@ dist/
 build/
 *.zip
 *.tar.gz
-*.rar 
+*.rar
 
 /新json适配/

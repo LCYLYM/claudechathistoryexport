@@ -16,15 +16,16 @@
 }
 
 #claude-control-panel.collapsed {
-  transform: translateX(calc(100% - 50px));
+  transform: translateX(calc(100% - 30px));
 }
 
 .claude-toggle-btn {
   position: absolute;
-  left: -25px;
-  top: 20px;
-  width: 50px;
-  height: 50px;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
   display: flex;
@@ -34,11 +35,20 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
   border: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 1000000;
 }
 
 .claude-toggle-btn:hover {
-  transform: scale(1.1);
+  transform: translateY(-50%) scale(1.1);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+#claude-control-panel.collapsed .claude-toggle-btn {
+  transform: translateY(-50%);
+}
+
+#claude-control-panel.collapsed .claude-toggle-btn:hover {
+  transform: translateY(-50%) scale(1.1);
 }
 
 .claude-toggle-btn svg {

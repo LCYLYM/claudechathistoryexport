@@ -29,6 +29,11 @@ class ConversationManager {
             this.loadConversations();
         });
 
+        // 导入对话
+        document.getElementById('import-conversations').addEventListener('click', () => {
+            this.importConversations();
+        });
+
         // 导出全部
         document.getElementById('export-all').addEventListener('click', () => {
             this.exportAll();
@@ -48,6 +53,52 @@ class ConversationManager {
         document.getElementById('details-modal').addEventListener('click', (e) => {
             if (e.target.id === 'details-modal') {
                 this.closeModal();
+            }
+        });
+
+        // 事件委托处理所有按钮点击
+        this.setupEventDelegation();
+    }
+
+    setupEventDelegation() {
+        // 对话容器的事件委托
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const action = target.getAttribute('data-action');
+            const conversationId = target.getAttribute('data-conversation-id');
+
+            if (action && conversationId) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                switch (action) {
+                    case 'view':
+                        this.viewConversation(conversationId);
+                        break;
+                    case 'export':
+                        this.exportConversation(conversationId);
+                        break;
+                    case 'delete':
+                        this.deleteConversation(conversationId);
+                        break;
+                }
+                return;
+            }
+
+            // 处理重试按钮
+            if (action === 'retry') {
+                e.preventDefault();
+                this.loadConversations();
+                return;
+            }
+
+            // 处理对话卡片点击（显示详情）
+            const conversationCard = target.closest('.conversation-card');
+            if (conversationCard && !target.closest('.conversation-actions')) {
+                const cardConversationId = conversationCard.getAttribute('data-conversation-id');
+                if (cardConversationId) {
+                    this.showDetails(cardConversationId);
+                }
             }
         });
     }
@@ -133,7 +184,7 @@ class ConversationManager {
         const size = this.formatBytes(JSON.stringify(conversation).length);
 
         return `
-            <div class="conversation-card" onclick="manager.showDetails('${conversation.id}')">
+            <div class="conversation-card" data-conversation-id="${conversation.id}">
                 <div class="conversation-title">${conversation.name || '未命名对话'}</div>
                 <div class="conversation-meta">
                     <span>保存于 ${savedAt}</span>
@@ -144,14 +195,14 @@ class ConversationManager {
                     <span>💬 ${messageCount} 条消息</span>
                     <span>📦 ${size}</span>
                 </div>
-                <div class="conversation-actions" onclick="event.stopPropagation()">
-                    <button class="btn btn-small btn-secondary" onclick="manager.viewConversation('${conversation.id}')">
+                <div class="conversation-actions">
+                    <button class="btn btn-small btn-secondary" data-action="view" data-conversation-id="${conversation.id}">
                         查看
                     </button>
-                    <button class="btn btn-small btn-secondary" onclick="manager.exportConversation('${conversation.id}')">
+                    <button class="btn btn-small btn-secondary" data-action="export" data-conversation-id="${conversation.id}">
                         导出
                     </button>
-                    <button class="btn btn-small btn-danger" onclick="manager.deleteConversation('${conversation.id}')">
+                    <button class="btn btn-small btn-danger" data-action="delete" data-conversation-id="${conversation.id}">
                         删除
                     </button>
                 </div>
@@ -202,13 +253,13 @@ class ConversationManager {
             <div>
                 <h4 style="margin-bottom: 12px; color: #1e293b;">操作</h4>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="manager.viewConversation('${conversation.id}')">
+                    <button class="btn btn-primary" data-action="view" data-conversation-id="${conversation.id}">
                         在查看器中打开
                     </button>
-                    <button class="btn btn-secondary" onclick="manager.exportConversation('${conversation.id}')">
+                    <button class="btn btn-secondary" data-action="export" data-conversation-id="${conversation.id}">
                         导出JSON
                     </button>
-                    <button class="btn btn-danger" onclick="manager.deleteConversation('${conversation.id}')">
+                    <button class="btn btn-danger" data-action="delete" data-conversation-id="${conversation.id}">
                         删除对话
                     </button>
                 </div>
@@ -220,17 +271,26 @@ class ConversationManager {
 
     viewConversation(conversationId) {
         const conversation = this.conversations.find(conv => conv.id === conversationId);
-        if (!conversation) return;
+        if (!conversation) {
+            console.error('找不到对话:', conversationId);
+            return;
+        }
 
+        console.log('打开查看器:', conversation.name);
         const viewerUrl = chrome.runtime.getURL('viewer.html');
         const dataParam = encodeURIComponent(JSON.stringify(conversation));
         window.open(`${viewerUrl}?data=${dataParam}`, '_blank');
+        this.closeModal(); // 关闭模态框
     }
 
     exportConversation(conversationId) {
         const conversation = this.conversations.find(conv => conv.id === conversationId);
-        if (!conversation) return;
+        if (!conversation) {
+            console.error('找不到对话:', conversationId);
+            return;
+        }
 
+        console.log('导出对话:', conversation.name);
         const blob = new Blob([JSON.stringify(conversation, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -240,6 +300,9 @@ class ConversationManager {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        // 显示成功提示
+        this.showToast('对话导出成功！', 'success');
     }
 
     async deleteConversation(conversationId) {
@@ -263,14 +326,21 @@ class ConversationManager {
 
     async exportAll() {
         if (this.conversations.length === 0) {
-            alert('没有可导出的对话');
+            this.showToast('没有可导出的对话', 'error');
             return;
         }
 
         const exportData = {
             exportTime: new Date().toISOString(),
             version: '2.0.0',
-            conversations: this.conversations
+            type: 'claude_conversations_export',
+            totalConversations: this.conversations.length,
+            conversations: this.conversations,
+            metadata: {
+                exportedBy: 'Claude对话管理中心',
+                canImportToViewer: true,
+                canImportToManager: true
+            }
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -282,6 +352,78 @@ class ConversationManager {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        this.showToast(`已导出 ${this.conversations.length} 个对话`, 'success');
+    }
+
+    importConversations() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            if (e.target.files.length > 0) {
+                await this.handleImportFile(e.target.files[0]);
+            }
+        };
+        input.click();
+    }
+
+    async handleImportFile(file) {
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            // 检查是否是导出的多对话文件
+            if (data.type === 'claude_conversations_export' && data.conversations) {
+                await this.importMultipleConversations(data.conversations);
+            } else if (data.chat_messages) {
+                // 单个对话文件
+                await this.importSingleConversation(data);
+            } else {
+                this.showToast('不支持的文件格式', 'error');
+            }
+        } catch (error) {
+            this.showToast('文件解析失败: ' + error.message, 'error');
+        }
+    }
+
+    async importSingleConversation(conversationData) {
+        try {
+            await chrome.runtime.sendMessage({
+                type: 'SAVE_CONVERSATION',
+                data: conversationData
+            });
+
+            this.showToast('对话导入成功', 'success');
+            await this.loadConversations();
+        } catch (error) {
+            this.showToast('导入失败: ' + error.message, 'error');
+        }
+    }
+
+    async importMultipleConversations(conversations) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const conversation of conversations) {
+            try {
+                await chrome.runtime.sendMessage({
+                    type: 'SAVE_CONVERSATION',
+                    data: conversation
+                });
+                successCount++;
+            } catch (error) {
+                console.error('导入对话失败:', conversation.name, error);
+                failCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            this.showToast(`成功导入 ${successCount} 个对话${failCount > 0 ? `，失败 ${failCount} 个` : ''}`, 'success');
+            await this.loadConversations();
+        } else {
+            this.showToast('导入失败', 'error');
+        }
     }
 
     async clearAll() {
@@ -344,9 +486,45 @@ class ConversationManager {
                 </svg>
                 <h3>加载失败</h3>
                 <p>${message}</p>
-                <button class="btn btn-primary" onclick="manager.loadConversations()">重试</button>
+                <button class="btn btn-primary" data-action="retry">重试</button>
             </div>
         `;
+    }
+
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `manager-toast manager-toast-${type}`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+            font-size: 14px;
+        `;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
     }
 }
 
